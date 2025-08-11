@@ -44,7 +44,7 @@ const Sidebar = ({ onLogout }) => {
                 display: 'flex',
                 flexDirection: 'column',
             }}
-            
+
         >
             <div
                 style={{
@@ -93,6 +93,10 @@ const Sidebar = ({ onLogout }) => {
                             <Link to="/timetable">Time Table</Link>
                         </Menu.Item>
                     </Menu.SubMenu>
+
+                    <Menu.Item key="/group" icon={<TeamOutlined />}>
+                        <Link to="/group">Group</Link>
+                    </Menu.Item>
 
                     <Menu.Item key="/settings" icon={<SettingOutlined />}>
                         <Link to="/settings">Settings</Link>

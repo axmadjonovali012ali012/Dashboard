@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import {
-    Layout, Table, Input, Avatar, Button, Dropdown, Menu, Space, Modal, Popconfirm, message, Card
+    Layout, Table, Input, Avatar, Button, Space, Modal, Popconfirm, message, Card
 } from 'antd';
 import {
-    SearchOutlined, EditOutlined, DeleteOutlined, EyeOutlined, DownOutlined,
+    SearchOutlined, EditOutlined, DeleteOutlined, EyeOutlined
 } from '@ant-design/icons';
 import Sidebar from '../components/Sidebar';
 import Header from '../components/Header';
@@ -28,6 +28,7 @@ const TeachersPage = () => {
         parents: '',
     });
     const [editingTeacher, setEditingTeacher] = useState(null);
+    const [searchText, setSearchText] = useState('');
 
     useEffect(() => {
         fetchTeachers();
@@ -173,12 +174,9 @@ const TeachersPage = () => {
         },
     ];
 
-    const classMenu = (
-        <Menu>
-            <Menu.Item key="all">All Departments</Menu.Item>
-            <Menu.Item key="math">Math</Menu.Item>
-            <Menu.Item key="physics">Physics</Menu.Item>
-        </Menu>
+    const filteredTeachers = teachers.filter((teacher) =>
+        teacher.name.toLowerCase().includes(searchText.toLowerCase()) ||
+        teacher.lastname.toLowerCase().includes(searchText.toLowerCase())
     );
 
     return (
@@ -190,32 +188,32 @@ const TeachersPage = () => {
                     <h1>Teachers</h1>
                     <div style={{ backgroundColor: 'white', borderRadius: '12px', padding: '24px' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
-                            <Search placeholder="Search by Name" style={{ width: 300 }} prefix={<SearchOutlined />} />
-                            <div style={{ display: 'flex', gap: 12 }}>
-                                <Button type="primary" onClick={() => setIsModalOpen(true)}>
-                                    Add New Teacher
-                                </Button>
-                                <Dropdown overlay={classMenu}>
-                                    <Button>
-                                        All Departments <DownOutlined />
-                                    </Button>
-                                </Dropdown>
-                            </div>
+                            <Search
+                                placeholder="Search by Name"
+                                style={{ width: 300 }}
+                                prefix={<SearchOutlined />}
+                                value={searchText}
+                                onChange={(e) => setSearchText(e.target.value)}
+                            />
+                            <Button type="primary" onClick={() => setIsModalOpen(true)}>
+                                Add New Teacher
+                            </Button>
                         </div>
 
                         <Table
                             columns={columns}
-                            dataSource={teachers}
+                            dataSource={filteredTeachers}
                             loading={loading}
                             pagination={{
                                 current: currentPage,
                                 pageSize: 10,
-                                total: teachers.length,
+                                total: filteredTeachers.length,
                                 onChange: (page) => setCurrentPage(page),
                                 showTotal: (total) => `Page ${currentPage} of ${Math.ceil(total / 10)}`,
                                 showSizeChanger: false,
                             }}
                             bordered
+                            rowKey="id"
                         />
                     </div>
                 </Content>

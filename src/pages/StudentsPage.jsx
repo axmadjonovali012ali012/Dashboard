@@ -1,254 +1,202 @@
-import React, { useState, useEffect } from 'react';
-import {
-    Layout, Table, Input, Avatar, Button, Dropdown, Menu, Space, Modal, Spin, Popconfirm, message
-} from 'antd';
-import {
-    SearchOutlined, EditOutlined, DeleteOutlined, EyeOutlined, DownOutlined,
-} from '@ant-design/icons';
+import React, { useEffect, useState } from 'react';
+import { Layout, Table, Input, Button, Popconfirm, Modal, message, Select, Space } from 'antd';
+import { SearchOutlined, EditOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons';
+import { db } from '../components/firebase/config';
+import { collection, getDocs, addDoc, doc, deleteDoc, updateDoc } from 'firebase/firestore';
 import Sidebar from '../components/Sidebar';
 import Header from '../components/Header';
-import TeacherAvatar from '../assets/Img2.png';
-import AddStudentForm from './AddStudentsForm';
-import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
-import { db } from '../components/firebase/config';
 
 const { Content } = Layout;
-const { Search } = Input;
 
 const StudentsPage = () => {
-    const [currentPage, setCurrentPage] = useState(1);
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [isEditMode, setIsEditMode] = useState(false);
-    const [editingStudent, setEditingStudent] = useState(null);
     const [students, setStudents] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const [searchText, setSearchText] = useState('');
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [formData, setFormData] = useState({
+        name: '',
+        lastname: '',
+        phone: '',
+        address: '',
+        className: []
+    });
+    const [editingId, setEditingId] = useState(null);
 
     const fetchStudents = async () => {
-        setLoading(true);
-        try {
-            const querySnapshot = await getDocs(collection(db, 'Students'));
-            const studentsList = querySnapshot.docs.map((doc, index) => {
-                const data = doc.data();
-                return {
-                    key: doc.id,
-                    id: doc.id,
-                    no: String(index + 1).padStart(2, '0'),
-                    ...data,
-                    createdAt: data.createdAt?.toDate?.().toLocaleString('ru-RU', {
-                        day: '2-digit',
-                        month: '2-digit',
-                        year: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                    }) || 'N/A',
-                };
-            });
-            setStudents(studentsList);
-        } catch (error) {
-            console.error('Error fetching students:', error);
-        } finally {
-            setLoading(false);
-        }
+        const querySnapshot = await getDocs(collection(db, 'students'));
+        const data = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setStudents(data);
     };
 
     useEffect(() => {
         fetchStudents();
     }, []);
 
-    const handleAddStudent = () => {
-        setIsEditMode(false);
-        setEditingStudent(null);
+    const handleAdd = () => {
+        setEditingId(null);
+        setFormData({ name: '', lastname: '', phone: '', address: '', className: [] });
         setIsModalOpen(true);
     };
 
-    const handleEditStudent = (student) => {
-        setIsEditMode(true);
-        setEditingStudent(student);
+    const handleEdit = (record) => {
+        setEditingId(record.id);
+        setFormData(record);
         setIsModalOpen(true);
     };
 
-    const handleDeleteStudent = async (id) => {
+    const handleDelete = async (id) => {
         try {
-            await deleteDoc(doc(db, 'Students', id));
-            message.success('Deleted successfully');
+            await deleteDoc(doc(db, 'students', id));
+            message.success("O'quvchi o'chirildi!");
             fetchStudents();
         } catch (error) {
-            console.error('Delete error:', error);
-            message.error('Failed to delete');
+            message.error("O'chirishda xatolik!");
         }
     };
 
-    const handleSaveStudent = async (formValues) => {
-        try {
-            if (
-                !formValues.name ||
-                !formValues.lastname ||
-                !formValues.location ||
-                !formValues.phone ||
-                !formValues.parents
-            ) {
-                return message.warning('Iltimos, barcha maydonlarni to‘ldiring!');
-            }
+    const handleSave = async () => {
+        const { name, lastname, phone, address, className } = formData;
 
-            if (isEditMode && editingStudent) {
-                const studentRef = doc(db, 'Students', editingStudent.id);
-                await updateDoc(studentRef, formValues);
-                message.success('Updated successfully');
+        if (!name || !lastname || !phone || !address || className.length === 0) {
+            message.error("Iltimos, barcha maydonlarni to'ldiring!");
+            return;
+        }
+
+        try {
+            if (editingId) {
+                await updateDoc(doc(db, 'students', editingId), formData);
+                message.success("O'quvchi yangilandi!");
             } else {
-                await addDoc(collection(db, 'Students'), {
-                    ...formValues,
-                    createdAt: new Date(),
-                });
-                message.success('Added successfully');
+                await addDoc(collection(db, 'students'), formData);
+                message.success("Yangi o'quvchi qo'shildi!");
             }
-            setIsModalOpen(false);
             fetchStudents();
+            setIsModalOpen(false);
         } catch (error) {
-            console.error('Save error:', error);
-            message.error('Failed to save');
+            message.error("Xatolik yuz berdi!");
         }
     };
-
-    const classMenu = (
-        <Menu>
-            <Menu.Item key="all">All Classes</Menu.Item>
-            <Menu.Item key="12A">12-A</Menu.Item>
-            <Menu.Item key="12B">12-B</Menu.Item>
-        </Menu>
-    );
 
     const columns = [
         {
-            title: 'No',
-            dataIndex: 'no',
-            key: 'no',
-            width: 50,
-        },
-        {
-            title: 'Student',
+            title: "Ismi",
             dataIndex: 'name',
-            key: 'name',
-            render: (text) => (
-                <Space>
-                    <Avatar src={TeacherAvatar} />
-                    {text}
-                </Space>
-            ),
+            key: 'name'
         },
         {
-            title: 'Lastname',
+            title: "Familiyasi",
             dataIndex: 'lastname',
-            key: 'lastname',
+            key: 'lastname'
         },
         {
-            title: 'Location',
-            dataIndex: 'location',
-            key: 'location',
-        },
-        {
-            title: 'Contact',
+            title: "Telefon",
             dataIndex: 'phone',
-            key: 'phone',
+            key: 'phone'
         },
         {
-            title: 'Parents',
-            dataIndex: 'parents',
-            key: 'parents',
+            title: "Manzil",
+            dataIndex: 'address',
+            key: 'address'
         },
         {
-            title: 'Date Added',
-            dataIndex: 'createdAt',
-            key: 'createdAt',
+            title: "Sinf",
+            dataIndex: 'className',
+            key: 'className',
+            render: (text) => text?.join(', ')
         },
         {
-            title: 'Action',
-            key: 'action',
+            title: 'Harakatlar',
+            key: 'actions',
             render: (_, record) => (
                 <Space>
-                    <EyeOutlined style={{ cursor: 'pointer' }} />
-                    <EditOutlined style={{ cursor: 'pointer' }} onClick={() => handleEditStudent(record)} />
+                    <Button icon={<EditOutlined />} onClick={() => handleEdit(record)} />
                     <Popconfirm
-                        title="Are you sure delete this student?"
-                        onConfirm={() => handleDeleteStudent(record.id)}
-                        okText="Yes"
-                        cancelText="No"
+                        title="O'chirishga ishonchingiz komilmi?"
+                        onConfirm={() => handleDelete(record.id)}
+                        okText="Ha"
+                        cancelText="Yo'q"
                     >
-                        <DeleteOutlined style={{ color: 'red', cursor: 'pointer' }} />
+                        <Button danger icon={<DeleteOutlined />} />
                     </Popconfirm>
                 </Space>
-            ),
-        },
+            )
+        }
     ];
 
     return (
-        <Layout style={{ maxHeight: '100vh', overflow: 'hidden' }}>
+        <Layout>
             <Sidebar />
             <Layout>
                 <Header />
-                <Content style={{ margin: '24px', padding: '24px', height: '100vh', overflowY: 'auto' }}>
-                    <h1>Students</h1>
-
-                    <div style={{ backgroundColor: 'white', borderRadius: '12px', padding: '24px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                            <h3 style={{ margin: 0 }}>All Students List</h3>
-                        </div>
-
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-                            <Search placeholder="Search by Name or Roll" style={{ width: 300 }} prefix={<SearchOutlined />} />
-                            <div style={{ display: 'flex', gap: 12 }}>
-                                <Button type="primary" onClick={handleAddStudent}>Add New Student</Button>
-                                <Dropdown overlay={classMenu}>
-                                    <Button>
-                                        All Classes <DownOutlined />
-                                    </Button>
-                                </Dropdown>
-                            </div>
-                        </div>
-
-                        {loading ? (
-                            <Spin size="large" style={{ display: 'block', marginTop: 50 }} />
-                        ) : (
-                            <Table
-                                columns={columns}
-                                dataSource={students}
-                                pagination={{
-                                    current: currentPage,
-                                    pageSize: 10,
-                                    total: students.length,
-                                    onChange: (page) => setCurrentPage(page),
-                                    showTotal: (total, range) =>
-                                        `Page ${currentPage} of ${Math.ceil(total / 10)}`,
-                                    showSizeChanger: false,
-                                }}
-                                bordered
+                <Content style={{ margin: '24px 16px', padding: 24, minHeight: 280 }}>
+                    <div style={{ marginBottom: 16, backgroundColor: 'white', borderRadius: '10px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 30px', marginTop: '10px' }}>
+                            <Input
+                                placeholder="Qidirish"
+                                value={searchText}
+                                onChange={(e) => setSearchText(e.target.value)}
+                                prefix={<SearchOutlined />}
+                                style={{ width: 300 }}
                             />
-                        )}
+                            <Button type="primary" onClick={handleAdd} icon={<PlusOutlined />}>
+                                O'quvchi qo'shish
+                            </Button>
+                        </div>
+                        <Table
+                            style={{ padding: '0px 30px' }}
+                            dataSource={students.filter(student =>
+                                student.name.toLowerCase().includes(searchText.toLowerCase()) ||
+                                student.lastname.toLowerCase().includes(searchText.toLowerCase()))
+                            }
+                            columns={columns}
+                            rowKey="id"
+                        />
                     </div>
 
                     <Modal
+                        title={editingId ? "O'quvchini tahrirlash" : "Yangi o'quvchi qo'shish"}
                         open={isModalOpen}
-                        onCancel={() => {
-                            setIsModalOpen(false);
-                            setEditingStudent(null);
-                        }}
-                        footer={null}
-                        title={isEditMode ? 'Edit Student' : 'Add New Student'}
-                        width={500}
-                        style={{ top: 40 }}
-                        destroyOnClose
-                        bodyStyle={{ background: '#f5f5f5', borderRadius: 12, padding: 0 }}
+                        onCancel={() => setIsModalOpen(false)}
+                        onOk={handleSave}
+                        okText={editingId ? "Yangilash" : "Saqlash"}
+                        cancelText="Bekor qilish"
                     >
-                        <div
-                            style={{
-                                padding: '24px',
-                                backgroundColor: 'white',
-                                borderRadius: 12,
-                            }}
-                        >
-                            <AddStudentForm
-                                onSave={handleSaveStudent}
-                                initialData={editingStudent}
-                            />
+                        <Input
+                            placeholder="Ismi"
+                            value={formData.name}
+                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                            style={{ marginBottom: 10 }}
+                        />
+                        <Input
+                            placeholder="Familiyasi"
+                            value={formData.lastname}
+                            onChange={(e) => setFormData({ ...formData, lastname: e.target.value })}
+                            style={{ marginBottom: 10 }}
+                        />
+                        <Input
+                            placeholder="Telefon raqam"
+                            value={formData.phone}
+                            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                            style={{ marginBottom: 10 }}
+                        />
+                        <Input
+                            placeholder="Manzil"
+                            value={formData.address}
+                            onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                            style={{ marginBottom: 10 }}
+                        />
+                        <div style={{ marginBottom: 10 }}>
+                            <label style={{ display: 'block', marginBottom: 5 }}>Sinf</label>
+                            <Select
+                                mode="tags"
+                                style={{ width: '100%' }}
+                                placeholder="Sinfni tanlang yoki yozing"
+                                value={formData.className}
+                                onChange={(value) => setFormData({ ...formData, className: value })}
+                                tokenSeparators={[',']}
+                            >
+                                <Select.Option value="12-A">12-A</Select.Option>
+                                <Select.Option value="12-B">12-B</Select.Option>
+                            </Select>
                         </div>
                     </Modal>
                 </Content>

@@ -6,6 +6,8 @@ import { auth } from '../components/firebase/config';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import Logo1 from '../assets/logo1.png'
+
 
 export default function LoginPage() {
     const [loading, setLoading] = useState(false);
@@ -56,8 +58,9 @@ export default function LoginPage() {
             <div className="login_page">
                 <div className="header_block">
                     <div className="label">
-                        <div className="logo">
-                            <img width={130} height={50} src="/1logo.svg" alt="logo" />
+                        <div className="logo" style={{display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <img width={50} height={50} src={Logo1} alt="logo" />
+                            <h2 style={{ marginTop: '20px' }}> SmartBog'cha </h2>
                         </div>
                     </div>
 

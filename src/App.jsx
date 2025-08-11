@@ -1,32 +1,32 @@
-import React, { useEffect,useState } from 'react'
-import { BrowserRouter as Router,Route,Routes } from 'react-router-dom'
+import React, { useEffect, useState } from 'react'
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom'
 import RegistrationForm from './pages/LoginPage'
 import Index from './component/index'
 
 import ProtectedRoute from './routes/ProtectedRoute'
 const App = () => {
-  
-  
-  
+
+
+
 
   return (
-       <Router>
+    <Router>
       <Routes>
-        
-        <Route path='/login' element={<RegistrationForm/>} />
-       
+
+        <Route path='/login' element={<RegistrationForm />} />
+
         <Route path='*' element={
           <ProtectedRoute>
-          <Index/>
+            <Index />
           </ProtectedRoute>
-          } 
-          
-          />
+        }
 
-    </Routes>
+        />
+
+      </Routes>
     </Router>
-        
-      
+
+
   )
 }
 
